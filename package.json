@@ -1,0 +1,21 @@
+{
+  "name": "api_nodejs_mysql",
+  "version": "1.0.0",
+  "description": "REST API MySQL",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "node",
+    "mysql",
+    "npm",
+    "rest",
+    "api"
+  ],
+  "author": "Leandro Cesar Origuela",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.17.1"
+  }
+}
