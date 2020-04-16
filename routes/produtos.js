@@ -1,6 +1,33 @@
 const express = require('express');
 const router = express.Router();
 const mysql = require('../mysql').pool;
+const multer = require('multer');
+const login = require('./middlewere/login');
+
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, './uploads/');
+    },
+    filename: function(req, file, cb) {
+        cb(null, new Date().toISOString().replace(/:/g,'-') +'_'+ file.originalname);//Possivel erro
+    }
+});
+
+const fileFilter = (req, file, cb) => {
+    if (file.mimetype === 'image/jpeg' || file.mimetype === 'image/png') {
+        cb(null, true);
+    } else {
+        cb(null, false);
+    }
+};
+
+const upload = multer({ 
+    storage: storage,
+    limits: {
+        fileSize: 1024 * 1024 * 5
+    },
+    fileFilter: fileFilter
+});
 
 //Retorna todos os Produtos
 router.get('/', (req, res, next) => {
@@ -17,6 +44,7 @@ router.get('/', (req, res, next) => {
                             id_produto: prod.id_produto,
                             nome: prod.nome,
                             preco: prod.preco,
+                            imagem_produto: prod.imagem_produto,
                             request: {
                                 tipo: 'GET',
                                 descricao: 'Retorna os detalhes de um produto específico',
@@ -32,13 +60,17 @@ router.get('/', (req, res, next) => {
 });
 
 //Insere um Produto --POST
-router.post('/', (req, res, next) => {
+router.post('/', login.obrigatorio, upload.single('produto_imagem'), (req, res, next) => {
     mysql.getConnection((error, conn) => {
         if (error) { return res.status(500).send({ error: error }) } 
         conn.query(
-            'INSERT INTO produtos (nome, preco) VALUES (?,?)',
-            [req.body.nome, req.body.preco],
-            (erro, result, field) => {
+            'INSERT INTO produtos (nome, preco, imagem_produto) VALUES (?, ?, ?)',
+            [
+                req.body.nome,
+                req.body.preco,
+                req.file.patch
+            ],
+            (error, result, field) => {
                 conn.release();
                 if (error) { return res.status(500).send({ error: error }) }
                 const response = {
@@ -47,9 +79,10 @@ router.post('/', (req, res, next) => {
                         id_produto: result.id_produto,
                         nome: req.body.nome,
                         preco: req.body.preco,
+                        imagem_produto: req.file.path,
                         request: {
                             tipo: 'GET',
-                            descricao: 'Insere um produto',
+                            descricao: 'Retorna todos os produtos',
                             url: 'http://localhost:3000/produtos'
                         }
                     }
@@ -79,9 +112,10 @@ router.get('/:id_produto', (req, res, next) => {
                         id_produto: result[0].id_produto,
                         nome: result[0].nome,
                         preco: result[0].preco,
+                        imagem_produto: result[0].imagem_produto,
                         request: {
                             tipo: 'GET',
-                            descricao: 'Retorna um produto',
+                            descricao: 'Retorna todos os produto',
                             url: 'http://localhost:3000/produtos'
                         }
                     }
@@ -93,7 +127,7 @@ router.get('/:id_produto', (req, res, next) => {
 });
 
 //Altera um produto
-router.patch('/', (req, res, next) => {
+router.patch('/', login.obrigatorio, (req, res, next) => {
     mysql.getConnection((error, conn) => {
         if (error) { return res.status(500).send({ error: error }) } 
         conn.query(
@@ -129,7 +163,7 @@ router.patch('/', (req, res, next) => {
 });
 
 //Exclui um produto
-router.delete('/', (req, res, next) => {
+router.delete('/', login.obrigatorio, (req, res, next) => {
     mysql.getConnection((error, conn) => {
         if (error) { return res.status(500).send({ error: error }) } 
         conn.query(
