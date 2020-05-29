@@ -1,5 +1,5 @@
 {
-  "name": "api_nodejs_mysql",
+  "name": "api_mysql_4",
   "version": "1.0.0",
   "description": "REST API MySQL",
   "main": "index.js",
